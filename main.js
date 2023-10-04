@@ -1,8 +1,8 @@
-import gsap from 'gsap'
 import './style.scss'
 
 const canvas = document.querySelector('.js-canvas')
 const ctx = canvas.getContext('2d')
+const scoreRef = document.querySelector('.js-score')
 
 let width = (canvas.width = window.innerWidth)
 let height = (canvas.height = window.innerHeight)
@@ -10,8 +10,9 @@ let height = (canvas.height = window.innerHeight)
 let mouseX = width / 2
 let mouseY = height / 2
 
-let frequency = 3
-let speed = 12
+let blockHeight = 16
+let frequency = 1
+let speed = 10
 
 let circle = {
   radius: 10,
@@ -26,6 +27,14 @@ let lines = []
 let interval = setInterval(() => {
   setupLine(columns)
 }, 1000 / frequency)
+
+let score = 0
+let timer = setInterval(() => {
+  score++
+  scoreRef.innerHTML = score
+}, 30)
+
+let isDefeat = false
 
 const onResize = () => {
   width = canvas.width = window.innerWidth
@@ -46,7 +55,6 @@ const updateCursor = () => {
 const setupLine = (columns = 5) => {
   const rand = Math.floor(Math.random() * columns)
   const blockWidth = (width - gap * (columns - 1)) / columns
-  const blockHeight = 16
   let blocks = []
 
   for (let i = 0; i < columns; i++) {
@@ -64,13 +72,40 @@ const setupLine = (columns = 5) => {
   lines.push(blocks)
 }
 
-const updateBlocks = (line) => {
-  line.forEach((block, i) => {
-    block.y += speed
+const cursorChecker = () => {
+  const currentMouse = {
+    x: mouseX,
+    y: mouseY
+  }
 
-    if (block.y > height) {
-      lines.pop()
-    }
+  lines.forEach((line) => {
+    line.forEach((block) => {
+      if (
+        currentMouse.x > block.x &&
+        currentMouse.x < block.x + block.width &&
+        currentMouse.y > block.y &&
+        currentMouse.y < block.y + block.height
+      ) {
+        clearInterval(timer)
+        isDefeat = true
+      }
+    })
+  })
+}
+
+const updateBlocks = (line) => {
+  if (line[0].y > height + blockHeight) {
+    lines.shift()
+    frequency += 0.1
+    speed++
+    clearInterval(interval)
+    interval = setInterval(() => {
+      setupLine(columns)
+    }, 1000 / frequency)
+  }
+
+  line.forEach((block) => {
+    block.y += speed
 
     ctx.beginPath()
     ctx.rect(block.x, block.y, block.width, block.height)
@@ -87,10 +122,13 @@ const updateLines = () => {
 }
 
 const render = () => {
-  ctx.clearRect(0, 0, width, height)
+  if (!isDefeat) {
+    ctx.clearRect(0, 0, width, height)
+    updateLines()
+  }
 
   updateCursor()
-  updateLines()
+  cursorChecker()
 
   requestAnimationFrame(render)
 }
