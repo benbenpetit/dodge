@@ -141,6 +141,11 @@ const init = () => {
     mouseY = e.pageY
   })
 
+  window.addEventListener('touchmove', (e) => {
+    mouseX = e.pageX
+    mouseY = e.pageY
+  })
+
   window.addEventListener('resize', onResize, false)
 }
 
